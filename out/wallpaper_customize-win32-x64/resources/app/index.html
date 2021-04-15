@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <!-- Required meta tags -->
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="dist/bootstrap/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="dist/css/app.css">
+    <title>壁纸之家</title>
+    <style>
+      body,html {
+        width: 100%;
+        /* overflow-x: hidden; */
+      }
+      .wallpaper-img {
+        width: 100%;
+        height: 100%;
+      }
+      .img-container {
+        cursor: pointer;
+      }
+      .img-container:hover .mask {
+        height: 100%;
+      }
+      .mask {
+        transition: all .5s;
+        overflow: hidden;
+        width: 100%;
+        height: 0;
+        background-color: rgba(0, 0, 0, .3);
+        top: 0;
+        left: 0;
+      }
+      .mask p {
+        color: #fff;
+      }
+    </style>
+  </head>
+  <body>
+    <nav class="navbar navbar-expand-sm navbar-dark bg-dark sticky-top">
+      <a class="navbar-brand" href="#">壁纸之家</a>
+      <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarTogglerDemo01" aria-controls="navbarTogglerDemo01" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navbarTogglerDemo01">
+        <ul class="navbar-nav mr-auto">
+          <li class="nav-item active">
+            <a class="nav-link" href="javascript:;">最新壁纸 <span class="sr-only">(current)</span></a>
+          </li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle" id="navbarDropdown" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" href="javascript:;">壁纸分类</a>
+            <div class="dropdown-menu nav-category" aria-labelledby="navbarDropdown">
+
+            </div>
+          </li>
+      </div>
+    </nav>
+    <div id="main_content" class="container-fluid px-0 bg-dark">
+      <div class="d-flex justify-content-center flex-wrap package-container">
+
+      </div>
+      <!-- <div class="img-container">
+        <img src="https://images.alphacoders.com/874/thumb-1920-874852.png" alt="测试" class="img-thumbnail wallpaper-img border-0 rounded">
+      </div>
+      <div class="img-container">
+        <img src="https://images.alphacoders.com/874/thumb-1920-874852.png" alt="测试" class="img-thumbnail wallpaper-img border-0 rounded">
+      </div>
+      <div class="img-container">
+        <img src="https://images.alphacoders.com/874/thumb-1920-874852.png" alt="测试" class="img-thumbnail wallpaper-img border-0 rounded">
+      </div> -->
+    </div>
+    <!-- 图片查看器 -->
+    <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="detailModalLabel">图片查看</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">关闭</button>
+            <button type="button" class="btn btn-primary" id="set_wallpaper">设置为壁纸</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Optional JavaScript -->
+    <!-- jQuery first, then Popper.js, then Bootstrap JS -->
+    <script>
+      window.$ = window.jQuery = require("./dist/js/jquery-3.4.1.min.js");
+    </script>
+    <script src="dist/js/popper.min.js"></script>
+    <script src="dist/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script>
+      function renderWallpaperData(wallpapers,page,callbark) {
+        const row_count = 5;        
+        const column_count = 5;
+        const img_element = wallpapers.map(item => `
+          <div class="img-container position-relative" data-toggle="modal" data-target="#detailModal" data-imgsrc="${item.url_image}" data-category="${item.category}">
+            <img src="${item.url_thumb}" alt="${item.category}" class="img-thumbnail wallpaper-img border-0 rounded bg-dark">
+            <div class="mask position-absolute d-flex flex-column justify-content-center align-items-center">
+              <p class="text-center">
+                图片分类：${item.category}
+              </p>
+              <p class="text-center">
+                图片大小：${item.width}*${item.height}
+              </p>
+            </div>
+          </div>
+          `).join("");
+          if(page==1) {
+            $("#main_content .package-container").empty().html(img_element);
+            $("#main_content .load-more").remove();
+            $("#main_content").append(`
+              <button type="button" class="btn btn-secondary btn-lg btn-block load-more" data-page="${page}">更多</button>
+            `);
+          } else {
+            $("#main_content .load-more").attr("data-page",page);
+            $("#main_content .package-container").append(img_element);
+          }
+          
+          $("#main_content").off("click");
+          $("#main_content").on("click",".load-more",function() {
+            callbark.call(this);
+          });
+          $("#main_content > .package-container > div.img-container").css({
+            width: ($(window).width() / row_count),
+            height: (($(window).height() - 48) / column_count)
+          });
+      }
+      $(function() {
+        const { getData, getCategory, getCategoryData } = require('electron').remote.require('./getData');
+        const { saveFile, changeWallpaper } = require('electron').remote.require('./changeWallpaper');
+        const row_count = 5;        
+        const column_count = 5;
+
+        $("body,html").css({
+          "min-height": $(window).height()
+        });
+        $(window).resize(function() {
+          $("body,html").css({
+            "min-height": $(window).height()
+          });
+          $("#main_content > .package-container > div.img-container").css({
+            width: ($(window).width() / row_count),
+            height: (($(window).height() - 48) / column_count)
+          });
+        });
+        getCategory().then(res => {
+          if(res.body.success) {
+            const category_element = res.body.categories.filter((item,index) => index < 10).map(item => `
+              <a class="dropdown-item" href="javascript:;" data-category-id="${item.id}">${item.name}</a>
+            `);
+            $(".navbar .nav-category").empty().html(category_element);
+            $(".navbar .nav-category").append(`
+              <div class="dropright menu-more">
+                <span class="dropdown-item dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">更多</span>
+                <div class="dropdown-menu">
+                  ${res.body.categories.filter((item,index) => index >= 10).map(item => `
+                    <a class="dropdown-item" href="javascript:;" data-category-id="${item.id}">${item.name}</a>
+                  `).join("")}
+                </div>
+              </div>
+            `);
+            $(".navbar .nav-category").off("click").off("mouseover").off("mouseout");
+            $(".navbar .nav-category").on("mouseover","div.menu-more",function() {
+              $(this).find('.dropdown-toggle').dropdown('show');
+              $(this).find(".dropdown-menu").css({
+                top: (-Number($(this).find(".dropdown-menu").height()) / 2)
+              });
+            });
+            $(".navbar .nav-category").on("mouseout","div.menu-more",function() {
+              $(this).find('.dropdown-toggle').dropdown('hide');
+              $(this).find(".dropdown-menu").css({
+                top: 0
+              });
+            });
+            $(".navbar .nav-category").on("click","a.dropdown-item",function() {
+              var category_id = $(this).attr("data-category-id");
+              getCategoryData(category_id,1).then(res => {
+                if(res.body.success) {
+                  renderWallpaperData(res.body.wallpapers,1,(function f() {
+                    var page = Number($(this).attr("data-page"))+1;
+                    getCategoryData(category_id,page).then(res => {
+                      if(res.body.success) {
+                        renderWallpaperData(res.body.wallpapers,page,f);
+                      }
+                    });
+                  }));
+                }
+              });
+            });
+          }
+        })
+        getData(1).then(res => {
+          if(res.body.success) {
+            renderWallpaperData(res.body.wallpapers,1,(function f() {
+              var page = Number($(this).attr("data-page"))+1;
+              getData(page).then(res => {
+                if(res.body.success) {
+                  renderWallpaperData(res.body.wallpapers,page,f);
+                }
+              });
+            }));
+          }
+        });
+        $('#detailModal').on('shown.bs.modal', function (e) {
+          var self = this;
+          $(this).find(".modal-body").empty().append(`
+            <img src="${$(e.relatedTarget).attr("data-imgsrc")}" alt="${$(e.relatedTarget).attr("data-category")}" class="img-thumbnail wallpaper-img border-0 rounded">
+          `);
+          $(this).find("#set_wallpaper").off("click");
+          $(this).find("#set_wallpaper").click(function() {
+            saveFile($(e.relatedTarget).attr("data-imgsrc")).then((path) => {
+              changeWallpaper(path).then(() => {
+                // console.log("保存成功");
+                alert("设置成功");
+              });
+            });
+          });
+        });
+      });
+    </script>
+  </body>
+</html>
